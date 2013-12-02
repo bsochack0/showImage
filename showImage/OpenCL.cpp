@@ -22,9 +22,9 @@ bool OpenCL::getOpenCLDeviceList(std::vector<OpenClDeviceInfo> &deviceList)
 		return false;
 	}
 
-	cl_platform_id* platformIds = new cl_platform_id[platformNum];
+	std::vector<cl_platform_id> platformIDs(platformNum);
 
-	error = clGetPlatformIDs(platformNum, platformIds, NULL);
+	error = clGetPlatformIDs(platformNum, &platformIDs[0], NULL);
 
 	//names.resize(platformNum);
 	//names.push_back(name);
@@ -33,11 +33,8 @@ bool OpenCL::getOpenCLDeviceList(std::vector<OpenClDeviceInfo> &deviceList)
 	{
         char platformName[1024] = { '\0' };
 
-		cl_platform_id* selectedPlatform = &platformIds[i];
- 
-        error = clGetPlatformInfo(platformIds[i], CL_PLATFORM_NAME, 1024, &platformName, NULL);
-
-
+		cl_platform_id selectedPlatform = platformIDs[i];
+        error = clGetPlatformInfo(selectedPlatform, CL_PLATFORM_NAME, 1024, &platformName, NULL);
  
         //error = clGetPlatformInfo(platformIds[i], CL_PLATFORM_VENDOR, 1024, &name, NULL);
  
@@ -45,7 +42,7 @@ bool OpenCL::getOpenCLDeviceList(std::vector<OpenClDeviceInfo> &deviceList)
         // Get device count.
         cl_uint deviceNumber;
  
-        error = clGetDeviceIDs(platformIds[i], CL_DEVICE_TYPE_ALL, 0, NULL, &deviceNumber);
+        error = clGetDeviceIDs(selectedPlatform, CL_DEVICE_TYPE_ALL, 0, NULL, &deviceNumber);
  
         if (0 == deviceNumber)
         {
@@ -53,28 +50,24 @@ bool OpenCL::getOpenCLDeviceList(std::vector<OpenClDeviceInfo> &deviceList)
         }
  
         // Get device identifiers.
-        cl_device_id* deviceIds = new cl_device_id[deviceNumber];
- 
-        error = clGetDeviceIDs(platformIds[i], CL_DEVICE_TYPE_ALL, deviceNumber, deviceIds, &deviceNumber);
+		std::vector<cl_device_id> deviceIDs(deviceNumber);
+        error = clGetDeviceIDs(selectedPlatform, CL_DEVICE_TYPE_ALL, deviceNumber, &deviceIDs[0], &deviceNumber);
  
         // Get device info.
         for (cl_uint i = 0; i < deviceNumber; ++i)
         {
             char deviceName[1024] = { '\0' };
  
-            error = clGetDeviceInfo(deviceIds[i], CL_DEVICE_NAME, 1024, &deviceName, NULL);
+            error = clGetDeviceInfo(deviceIDs[i], CL_DEVICE_NAME, 1024, &deviceName, NULL);
  
 			QString fullName = QString(platformName) + deviceName;
 
-			OpenClDeviceInfo openClDevice(&deviceIds[i], selectedPlatform, fullName);
+			OpenClDeviceInfo openClDevice(deviceIDs[i], selectedPlatform, fullName);
 
 			deviceList.push_back(openClDevice);
 		}
 
 	}
-
-    // Free memory.
-    delete[] platformIds;
 
 	return true;
 }

@@ -14,8 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     _ui->setupUi(this);
     showMaximized();
-    _scene = new QGraphicsScene(this);
-    _ui->imageArea->setScene(_scene);
+    _ui->imageArea->setScene(&_scene);
     _ui->imageArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     _ui->imageArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
@@ -31,9 +30,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::loadOpenCLDevices()
 {
-	OpenCL* opencl = new OpenCL();
+	OpenCL opencl;
 
-	opencl->getOpenCLDeviceList(_devices);
+	opencl.getOpenCLDeviceList(_devices);
 
 	int devicesCount = _devices.size();
 
@@ -50,31 +49,37 @@ void MainWindow::on_openImage_clicked()
 
 void MainWindow::on_actionOpen_triggered()
 {
-    _imagePath = QFileDialog::getOpenFileName(this,
+    QString imagePath = QFileDialog::getOpenFileName(this,
                                              tr("Open File"),
                                              "",
-                                             tr("Files (*.jpg)")
+                                             tr("Files (*.bmp)")
                                              );
 
-    QPixmap *tmpImage = new QPixmap(_imagePath);
+    QPixmap imageTmp;
+	if(!imageTmp.load(imagePath))
+	{
+		_ui->infoBox->setHtml("Image load failed: " + imagePath);
+		return;
+	}
+
+	_ui->infoBox->setHtml("<strong>Image loaded</strong>");
 
     _imagePreview = new QGraphicsPixmapItem(
-                tmpImage->scaled(QSize(800,600))
+                imageTmp.scaled(QSize(800,600))
     );
 
-    _ui->infoBox->setHtml("<strong>Image loaded</strong>");
+    _scene.addItem(_imagePreview);
 
-    _scene->addItem(_imagePreview);
-
-    _image = tmpImage->toImage();
-
-
-    //ImageProcess *imageProcess = new ImageProcess(&image);
-
+    _image = imageTmp.toImage();
 }
 
 void MainWindow::processImage()
 {
 	int deviceNumber = _ui->comboBox->currentIndex();
-	ImageProcess *imageProcessor = new ImageProcess(&_image, *_devices[deviceNumber]._deviceId);
+	ImageProcess imageProcessor(_image, *(_ui->infoBox), _devices[deviceNumber]._deviceId);
+
+	QPixmap imageTmp = QPixmap::fromImage(_image);
+	_imagePreview->setPixmap(imageTmp.scaled(800,600));
+
+	 _scene.update();
 }

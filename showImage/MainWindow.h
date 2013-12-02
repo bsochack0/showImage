@@ -27,9 +27,8 @@ private slots:
 
 private:
     Ui::MainWindow *_ui;
-    QGraphicsScene *_scene;
+    QGraphicsScene _scene;
     QGraphicsPixmapItem *_imagePreview;
-    QString _imagePath;
 	QImage _image;
 	void loadOpenCLDevices();
 	std::vector<OpenClDeviceInfo> _devices;
